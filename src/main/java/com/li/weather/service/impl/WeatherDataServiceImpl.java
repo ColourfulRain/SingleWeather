@@ -58,24 +58,48 @@ public class WeatherDataServiceImpl implements WeatherDataService {
 
         ValueOperations<String, String> ops = stringRedisTemplate.opsForValue();
         if (stringRedisTemplate.hasKey(uri)) {
-            log.info("【天气实现】{}","redis命中");
+            log.info("【天气实现】{}", "redis命中");
             strBoy = ops.get(uri);
-        }else {
-            log.info("【天气实现】{}","redis没有命中");
+        } else {
+            log.info("【天气实现】{}", "redis没有命中");
             ResponseEntity<String> forEntity = restTemplate.getForEntity(uri, String.class);
             //类型转换
             if (forEntity.getStatusCodeValue() == 200) {
                 strBoy = forEntity.getBody();
             }
             //写入缓存中
-            ops.set(uri,strBoy,1800, TimeUnit.SECONDS);
+            ops.set(uri, strBoy, 1800, TimeUnit.SECONDS);
         }
         try {
             weather = objectMapper.readValue(strBoy, WeatherResponse.class);
         } catch (IOException e) {
             //e.printStackTrace();
-            log.error("error",e);
+            log.error("error", e);
         }
         return weather;
+    }
+
+    @Override
+    public void syncDataByCityId(String cityId) {
+        String uri = WEATHER_URL + "cityKey=" + cityId;
+        saveWeatherData(uri);
+    }
+
+    /**
+     * 把天气数据放在缓存中
+     *
+     * @param uri
+     */
+    private void saveWeatherData(String uri) {
+        String strBoy = null;
+        ValueOperations<String, String> ops = stringRedisTemplate.opsForValue();
+        //调用服务接口来获取天气服务
+        ResponseEntity<String> forEntity = restTemplate.getForEntity(uri, String.class);
+        //类型转换
+        if (forEntity.getStatusCodeValue() == 200) {
+            strBoy = forEntity.getBody();
+        }
+        //写入缓存中
+        ops.set(uri, strBoy, 1800, TimeUnit.SECONDS);
     }
 }
