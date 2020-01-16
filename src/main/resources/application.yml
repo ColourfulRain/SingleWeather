@@ -1,2 +1,6 @@
 server:
   port: 8080
+#热部署
+spring:
+  thymeleaf:
+    cache: false
